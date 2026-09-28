@@ -1,0 +1,13 @@
+{
+  "name": "medisecure-healthcare-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MediSecure Healthcare Identity, QR, & Access Control System",
+  "scripts": {
+    "start:server": "npm --prefix server start",
+    "dev:server": "npm --prefix server dev",
+    "dev:client": "npm --prefix client dev",
+    "build:client": "npm --prefix client build",
+    "dev": "npm --prefix server start & npm --prefix client dev"
+  }
+}
