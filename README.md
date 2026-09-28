@@ -4,7 +4,6 @@
 [![Node.js](https://img.shields.io/badge/Node.js-22-green.svg)](https://nodejs.org/)
 [![Vite](https://img.shields.io/badge/Vite-8-purple.svg)](https://vitejs.dev/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-brightgreen.svg)](https://www.mongodb.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 An intelligent, full-stack healthcare identity, access control, and government health schemes platform built with FHIR R4 principles, zero-PII digital QR passes, context-aware authorization, and an **AI-Enabled Ration Card Healthcare Eligibility & Assistance Module** (supporting **MJPJAY 2.0 & Ayushman Bharat PM-JAY**).
 
@@ -127,5 +126,5 @@ All demo accounts use password: **`password123`**
 
 ---
 
-## 📄 License
-This project is licensed under the MIT License.
+## 👤 Author
+Built by **Omkar Panchal** — [GitHub @Omkar9783](https://github.com/Omkar9783)
