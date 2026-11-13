@@ -5,11 +5,11 @@ import { logAuditEvent } from '../middleware/audit.js';
 export const getConsents = async (req, res) => {
   try {
     let filter = {};
+    const requestedUid = req.params.patientUid || req.query.patientUid;
     if (req.user.role === 'PATIENT') {
-      filter.patientUid = req.user.patientUid;
+      filter.patientUid = req.user.patientUid || requestedUid;
     } else {
-      const { patientUid } = req.query;
-      if (patientUid) filter.patientUid = patientUid;
+      if (requestedUid) filter.patientUid = requestedUid;
     }
 
     const consents = await Consent.find(filter).sort({ createdAt: -1 });

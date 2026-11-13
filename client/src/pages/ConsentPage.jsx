@@ -21,13 +21,16 @@ export const ConsentPage = () => {
   });
 
   useEffect(() => {
-    fetchConsents();
+    if (user) {
+      fetchConsents();
+    }
   }, [user]);
 
   const fetchConsents = async () => {
     try {
       setLoading(true);
-      const res = await apiFetch(`/consent/${user.patientUid || 'PAT-2026-000001'}`);
+      const targetUid = user?.patientUid || 'PAT-2026-000001';
+      const res = await apiFetch(`/consent/${targetUid}`);
       if (res.success) setConsents(res.consents);
     } catch (err) {
       console.error(err);
@@ -42,7 +45,7 @@ export const ConsentPage = () => {
       const res = await apiFetch('/consent/grant', {
         method: 'POST',
         body: JSON.stringify({
-          patientUid: user.patientUid || 'PAT-2026-000001',
+          patientUid: user?.patientUid || 'PAT-2026-000001',
           ...grantForm
         })
       });

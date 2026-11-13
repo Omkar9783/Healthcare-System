@@ -40,12 +40,13 @@ export const NurseDashboardView = ({ onOpenQRScanner }) => {
   };
 
   const fetchVitals = async (uid) => {
+    if (!uid) return;
     try {
       setLoading(true);
       const res = await apiFetch(`/vitals/${uid}`);
       if (res.success) setVitalsHistory(res.vitals);
     } catch (err) {
-      console.error(err);
+      console.warn('Unable to fetch vitals:', err.message);
     } finally {
       setLoading(false);
     }

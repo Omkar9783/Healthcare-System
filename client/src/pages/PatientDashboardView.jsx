@@ -27,10 +27,15 @@ export const PatientDashboardView = ({ setActiveTab }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchPatientProfile();
+    if (user?.patientUid) {
+      fetchPatientProfile();
+    } else if (user) {
+      setLoading(false);
+    }
   }, [user]);
 
   const fetchPatientProfile = async () => {
+    if (!user?.patientUid) return;
     try {
       setLoading(true);
       const res = await apiFetch(`/patients/${user.patientUid}`);
@@ -38,7 +43,7 @@ export const PatientDashboardView = ({ setActiveTab }) => {
         setPatientData(res);
       }
     } catch (err) {
-      console.error('Failed to load patient dashboard:', err);
+      console.warn('Failed to load patient dashboard:', err.message);
     } finally {
       setLoading(false);
     }

@@ -66,6 +66,7 @@ export const DoctorDashboardView = ({ onOpenQRScanner, selectedPatientUid: exter
   };
 
   const fetchPatientRecord = async (uid) => {
+    if (!uid) return;
     try {
       setLoadingRecord(true);
       const res = await apiFetch(`/patients/${uid}`);
@@ -73,7 +74,7 @@ export const DoctorDashboardView = ({ onOpenQRScanner, selectedPatientUid: exter
         setPatientRecord(res);
       }
     } catch (err) {
-      console.error('Failed to fetch record:', err);
+      console.warn('Unable to fetch patient record:', err.message);
     } finally {
       setLoadingRecord(false);
     }
