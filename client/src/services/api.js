@@ -56,8 +56,10 @@ const withTimeout = (promise, ms) => {
 export const apiFetch = async (endpoint, options = {}) => {
   const token = getToken();
 
+  const isFormData = options.body instanceof FormData;
+
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
@@ -244,15 +246,34 @@ export const schemeApi = {
   removeFamily:   (id)          => apiDelete(`/schemes/family/${id}`),
 };
 
+/** AI Government Scheme Recommendation & Auto-Form Filling Assistant */
+export const schemeAssistantApi = {
+  getSchemes: (params = '') => apiGet(`/schemes/assistant/schemes${params ? `?${params}` : ''}`),
+  getSchemeById: (schemeId) => apiGet(`/schemes/assistant/schemes/${schemeId}`),
+  getProfile: (patientUid) => apiGet(`/schemes/assistant/profile/${patientUid}`),
+  updateProfile: (patientUid, body) => apiPut(`/schemes/assistant/profile/${patientUid}`, body),
+  uploadDocument: (formData) => apiUpload('/schemes/assistant/upload-document', formData),
+  getDocuments: (patientUid) => apiGet(`/schemes/assistant/documents/${patientUid}`),
+  evaluateEligibility: (patientUid) => apiPost(`/schemes/assistant/evaluate/${patientUid}`),
+  autofillForm: (patientUid, schemeId) => apiPost('/schemes/assistant/autofill', { patientUid, schemeId }),
+  submitApplication: (payload) => apiPost('/schemes/assistant/submit-application', payload),
+  getApplications: (patientUid) => apiGet(`/schemes/assistant/applications/${patientUid}`),
+  updateApplicationStatus: (applicationId, body) => apiPatch(`/schemes/assistant/applications/${applicationId}/status`, body),
+};
+
 /** QR routes */
 export const qrApi = {
   generate:       ()     => apiGet('/qr/generate'),
   scan:           (body) => apiPost('/qr/scan', body),
 };
 
-/** AI assistant */
-export const aiApi = {
-  chat:           (body) => apiPost('/ai/chat', body),
+/** AI Document Detection & Verification */
+export const documentApi = {
+  verify: (formData) => apiFetch('/documents/verify', { method: 'POST', body: formData }),
+  patientRecords: (patientUid) => apiGet(`/documents/patient/${patientUid}`),
+  adminAll: (status = '') => apiGet(`/documents/admin/all${status ? `?status=${status}` : ''}`),
+  review: (verificationId, body) => apiFetch(`/documents/review/${verificationId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  health: () => apiGet('/documents/health'),
 };
 
 // ── Export config constants for use in components ──────────

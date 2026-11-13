@@ -37,3 +37,12 @@ yarn-error.log*
 .idea/
 *.swp
 *.swo
+
+# Python & AI artifacts
+venv/
+ai-document-service/venv/
+__pycache__/
+*.pyc
+*.pt
+.pytest_cache/
+ai-document-service/.env

@@ -14,7 +14,9 @@ import {
   ShieldAlert, 
   Sliders, 
   ShieldCheck,
-  Landmark
+  Landmark,
+  FileCheck,
+  Sparkles
 } from 'lucide-react';
 
 export const Sidebar = ({ activeTab, setActiveTab }) => {
@@ -27,6 +29,8 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
 
   const navItems = [
     { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard, roles: ['ADMIN', 'DOCTOR', 'NURSE', 'LAB_TECHNICIAN', 'PHARMACIST', 'PATIENT', 'EMERGENCY_STAFF'] },
+    { id: 'document-verification', label: t('nav.documentVerification'), icon: FileCheck, roles: ['ADMIN', 'PATIENT', 'DOCTOR'] },
+    { id: 'scheme-assistant', label: t('nav.schemeAssistant') || 'Government Scheme Assistant', icon: Sparkles, roles: ['ADMIN', 'PATIENT', 'DOCTOR'] },
     { id: 'government-schemes', label: t('nav.governmentSchemes'), icon: Landmark, roles: ['ADMIN', 'PATIENT', 'DOCTOR'] },
     { id: 'patients', label: t('nav.patients'), icon: Users, roles: ['ADMIN', 'DOCTOR', 'NURSE', 'LAB_TECHNICIAN', 'PHARMACIST'] },
     { id: 'qr-scanner', label: t('nav.qrScanner'), icon: QrCode, roles: ['ADMIN', 'DOCTOR', 'NURSE', 'LAB_TECHNICIAN', 'PHARMACIST', 'EMERGENCY_STAFF'] },

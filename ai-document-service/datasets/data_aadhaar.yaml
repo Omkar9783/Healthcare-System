@@ -1,0 +1,13 @@
+# YOLO11 Aadhaar Field Detection Dataset Config
+path: ../datasets
+train: aadhaar/images/train
+val: aadhaar/images/val
+test: aadhaar/images/test
+
+names:
+  0: name_region
+  1: dob_region
+  2: photo_region
+  3: qr_region
+  4: address_region
+  5: aadhaar_number_region

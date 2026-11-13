@@ -1,0 +1,13 @@
+# YOLO11 Ration Card Field Detection Dataset Config
+path: ../datasets
+train: ration/images/train
+val: ration/images/val
+test: ration/images/test
+
+names:
+  0: head_of_family_region
+  1: ration_card_number_region
+  2: address_region
+  3: family_details_region
+  4: photograph_region
+  5: fair_price_shop_region

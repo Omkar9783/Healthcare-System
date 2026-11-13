@@ -1,0 +1,12 @@
+# YOLO11 Document Classification and Detection Dataset Config
+path: ../datasets
+train: document/images/train
+val: document/images/val
+test: document/images/test
+
+names:
+  0: aadhaar_front
+  1: aadhaar_back
+  2: ration_front
+  3: ration_back
+  4: other_document

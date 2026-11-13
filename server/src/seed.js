@@ -15,13 +15,18 @@ import HospitalScheme from './models/HospitalScheme.js';
 import HealthcarePackage from './models/HealthcarePackage.js';
 import VerificationRequest from './models/VerificationRequest.js';
 import SchemeNotification from './models/SchemeNotification.js';
+import DocumentVerification from './models/DocumentVerification.js';
 import { generateSecureToken } from './services/qrService.js';
+import { seedGovernmentSchemes } from './seedSchemes.js';
 
 export const seedDatabase = async () => {
   try {
+    // Always ensure Government Schemes database is populated
+    await seedGovernmentSchemes();
+
     const userCount = await User.countDocuments();
     if (userCount > 0) {
-      console.log('⚡ Database already contains data. Skipping re-seeding.');
+      console.log('⚡ Database already contains core user data. Skipping user re-seeding.');
       return;
     }
 
@@ -640,6 +645,150 @@ export const seedDatabase = async () => {
       reviewedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
       reviewedBy: 'Dr. V. Rao (Chief Medical IT & Governance)'
     });
+
+    await DocumentVerification.create([
+      {
+        verificationId: 'VERIF-AADHAAR-DEMO1',
+        patientId: mainPatient.uid,
+        patientName: mainPatient.name,
+        documentType: 'aadhaar_front',
+        side: 'front',
+        detectionConfidence: 0.96,
+        documentDetectionStatus: 'DETECTED',
+        ocrStatus: 'SUCCESS',
+        qrStatus: 'DECODED',
+        signatureStatus: 'VALID',
+        officialVerificationStatus: 'NOT_AVAILABLE',
+        dataMatchStatus: 'MATCHED',
+        anomalyStatus: 'CLEAN',
+        verificationStatus: 'VERIFIED',
+        reviewStatus: 'APPROVED',
+        reviewedBy: 'UIDAI Cryptographic Engine',
+        maskedIdNumber: 'XXXX-XXXX-8921',
+        extractedData: {
+          name: mainPatient.name,
+          dob: '15/08/1992',
+          gender: 'Male',
+          address: '402, Shivneri CHS, Dadar West, Mumbai, Maharashtra - 400028',
+          state: 'Maharashtra',
+          district: 'Mumbai',
+          qrDataType: 'UIDAI_SECURE_QR_V2'
+        },
+        anomalyDetails: {
+          isBlurred: false,
+          blurScore: 194.2,
+          isLowResolution: false,
+          dimensions: [800, 500],
+          boundaryDetected: true,
+          anomalies: []
+        },
+        patientMatchDetails: {
+          nameMatchScore: 1.0,
+          dobMatched: true,
+          genderMatched: true,
+          overallMatchScore: 0.98,
+          notes: ['Demographic match confirmed against registered patient record.']
+        },
+        decisionReasons: [
+          'Document classified as aadhaar_front with confidence 0.96.',
+          'UIDAI Digital Signature cryptographically validated successfully.',
+          'Demographic information aligns with patient record.'
+        ],
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+      },
+      {
+        verificationId: 'VERIF-RATION-DEMO2',
+        patientId: mainPatient.uid,
+        patientName: mainPatient.name,
+        documentType: 'ration_front',
+        side: 'front',
+        detectionConfidence: 0.91,
+        documentDetectionStatus: 'DETECTED',
+        ocrStatus: 'SUCCESS',
+        qrStatus: 'NOT_FOUND',
+        signatureStatus: 'NOT_CHECKED',
+        officialVerificationStatus: 'PENDING_OFFICIAL_VERIFICATION',
+        dataMatchStatus: 'MATCHED',
+        anomalyStatus: 'CLEAN',
+        verificationStatus: 'MANUAL_REVIEW',
+        reviewStatus: 'PENDING',
+        maskedIdNumber: 'RC-XXXX-XXXX-4512',
+        extractedData: {
+          name: mainPatient.name,
+          cardType: 'Yellow',
+          fairPriceShopNo: 'MH-FPS-400028',
+          familyMembersCount: 4,
+          state: 'Maharashtra',
+          district: 'Mumbai'
+        },
+        anomalyDetails: {
+          isBlurred: false,
+          blurScore: 165.8,
+          isLowResolution: false,
+          dimensions: [600, 800],
+          boundaryDetected: true,
+          anomalies: []
+        },
+        patientMatchDetails: {
+          nameMatchScore: 0.95,
+          dobMatched: false,
+          genderMatched: true,
+          overallMatchScore: 0.85,
+          notes: ['Head of family name matched registered patient.']
+        },
+        decisionReasons: [
+          'Document classified as ration_front with confidence 0.91.',
+          'Direct state RCMS automated gateway is PENDING_OFFICIAL_VERIFICATION.',
+          'Preliminary layout, SRC format, and family quota checks completed.',
+          'Document routed to hospital desk for authorized administrative review.'
+        ],
+        eligibleSchemes: [
+          {
+            schemeName: 'MJPJAY',
+            schemeFullName: 'Mahatma Jyotirao Phule Jan Arogya Yojana (MJPJAY 2.0)',
+            eligibilityStatus: 'Eligible - Priority BPL',
+            eligibilityReason: 'Verified under Maharashtra Priority Household (PHH/BPL Yellow Card). Covers up to ₹5,00,000 per family/year.',
+            coverageAmount: '₹5,00,000 per family per year',
+            officialPortalUrl: 'https://www.jeevandayee.gov.in',
+            proceduresCount: 1356,
+            benefits: [
+              '100% cashless hospitalization across 1,356 secondary & tertiary procedures',
+              'Covers pre-existing medical conditions from Day 1',
+              'Free diagnostic lab tests and 10 days post-discharge medications included'
+            ],
+            samplePackages: [
+              { packageName: 'Coronary Artery Bypass Graft (CABG)', category: 'Cardiology', coverageDetails: 'Full surgical & ICU cashless cover' },
+              { packageName: 'Total Knee Replacement (TKR)', category: 'Orthopedic Surgery', coverageDetails: 'Cashless prosthetic & surgical package' },
+              { packageName: 'Hemodialysis Sessions', category: 'Nephrology', coverageDetails: 'Full procedure & consumable coverage' }
+            ]
+          },
+          {
+            schemeName: 'PM-JAY',
+            schemeFullName: 'Ayushman Bharat – Pradhan Mantri Jan Arogya Yojana (PM-JAY)',
+            eligibilityStatus: 'Eligible - Priority Household',
+            eligibilityReason: 'BPL yellow card category automatically maps to SECC 2011 priority group for nationwide cashless cover.',
+            coverageAmount: '₹5,00,000 per family per year',
+            officialPortalUrl: 'https://beneficiary.nha.gov.in',
+            proceduresCount: 1949,
+            benefits: [
+              'All-India Portability: Valid in 28,000+ empanelled public and private hospitals nationwide',
+              '1,949 high-end surgical and critical care procedures covered',
+              'Zero co-payment for all family members listed on the ration card'
+            ],
+            samplePackages: [
+              { packageName: 'Oncology Chemotherapy Cycle', category: 'Oncology', coverageDetails: 'Full systemic chemotherapy package' },
+              { packageName: 'Cataract Surgery with IOL', category: 'Ophthalmology', coverageDetails: 'Phacoemulsification with foldable intraocular lens' }
+            ]
+          }
+        ],
+        empanelledHospitals: [
+          { hospitalName: 'KEM Hospital & Seth GS Medical College', city: 'Mumbai', contactPhone: '+91 22 2410 7000', schemes: ['MJPJAY', 'PM-JAY'] },
+          { hospitalName: 'Tata Memorial Centre (Advanced Cancer Care)', city: 'Mumbai', contactPhone: '+91 22 2417 7000', schemes: ['MJPJAY', 'PM-JAY'] },
+          { hospitalName: 'Grant Government Medical College & Sir JJ Group', city: 'Mumbai', contactPhone: '+91 22 2373 5555', schemes: ['MJPJAY', 'PM-JAY'] }
+        ],
+        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+      }
+    ]);
 
     console.log('✅ Synthetic healthcare demo data successfully seeded!');
   } catch (err) {

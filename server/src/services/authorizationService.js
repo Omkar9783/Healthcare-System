@@ -93,14 +93,20 @@ export const canAccess = async ({ user, patientUid, resource, purpose = 'Consult
       patientUid,
       status: 'ACTIVE',
       expiresAt: { $gt: new Date() },
-      $or: [
-        { grantedToUserId: user._id },
-        { grantedToRole: user.role },
-        { grantedToRole: 'ALL_CLINICIANS' }
-      ],
-      $or: [
-        { resourceType: 'ALL' },
-        { resourceType: resource }
+      $and: [
+        {
+          $or: [
+            { grantedToUserId: user._id },
+            { grantedToRole: user.role },
+            { grantedToRole: 'ALL_CLINICIANS' }
+          ]
+        },
+        {
+          $or: [
+            { resourceType: 'ALL' },
+            { resourceType: resource }
+          ]
+        }
       ]
     });
 

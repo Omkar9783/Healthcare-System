@@ -22,6 +22,8 @@ import { ConsentPage } from './pages/ConsentPage';
 import { AuditPage } from './pages/AuditPage';
 import { SecurityPage } from './pages/SecurityPage';
 import { GovernmentSchemesView } from './components/GovernmentSchemesView';
+import { GovernmentSchemeAssistant } from './components/GovernmentSchemeAssistant';
+import { AIDocumentVerificationView } from './pages/AIDocumentVerificationView';
 
 const MainAppContent = () => {
   const { user } = useAuth();
@@ -151,6 +153,10 @@ const MainAppContent = () => {
         return <AuditPage />;
       case 'admin':
         return <AdminDashboardView setActiveTab={setActiveTab} />;
+      case 'document-verification':
+        return <AIDocumentVerificationView onSelectTab={setActiveTab} />;
+      case 'scheme-assistant':
+        return <GovernmentSchemeAssistant />;
       case 'government-schemes':
         return <GovernmentSchemesView onSelectTab={setActiveTab} />;
       case 'security':

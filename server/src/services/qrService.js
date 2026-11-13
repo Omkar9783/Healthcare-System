@@ -16,7 +16,7 @@ export const generatePatientQR = async (patientUid, requestingUser) => {
   }
 
   const token = generateSecureToken(patientUid);
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours validity
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days validity
 
   patient.qrToken = token;
   patient.qrExpiresAt = expiresAt;
@@ -52,22 +52,36 @@ export const generatePatientQR = async (patientUid, requestingUser) => {
 };
 
 export const validateQRToken = async (qrToken, requestingUser) => {
-  let parsedToken = qrToken;
+  if (!qrToken) {
+    return { valid: false, reason: 'QR token is empty' };
+  }
+
+  const trimmed = typeof qrToken === 'string' ? qrToken.trim() : '';
+  let parsedToken = trimmed;
   let parsedUid = null;
 
   try {
-    const json = JSON.parse(qrToken);
-    if (json && json.token) {
-      parsedToken = json.token;
-      parsedUid = json.uid;
+    const json = JSON.parse(trimmed);
+    if (json && typeof json === 'object') {
+      if (json.token) parsedToken = json.token;
+      if (json.uid) parsedUid = json.uid;
     }
   } catch (e) {
     // String token provided directly
   }
 
-  const patient = await Patient.findOne({ 
-    $or: [{ qrToken: parsedToken }, { uid: parsedUid }]
-  });
+  // Also recognize direct Patient UID (e.g., PAT-2026-000001)
+  if (!parsedUid && (trimmed.startsWith('PAT-') || trimmed.toUpperCase().startsWith('PAT-'))) {
+    parsedUid = trimmed.toUpperCase();
+  }
+
+  const searchConditions = [];
+  if (parsedToken) searchConditions.push({ qrToken: parsedToken });
+  if (parsedUid) searchConditions.push({ uid: parsedUid });
+  if (trimmed) searchConditions.push({ uid: trimmed });
+  if (trimmed) searchConditions.push({ uid: trimmed.toUpperCase() });
+
+  const patient = await Patient.findOne({ $or: searchConditions });
 
   if (!patient) {
     if (requestingUser) {
@@ -79,7 +93,7 @@ export const validateQRToken = async (qrToken, requestingUser) => {
         resource: 'QR_VALIDATION',
         purpose: 'Identity Lookup',
         result: 'DENIED',
-        details: 'Invalid QR Token provided'
+        details: `Invalid QR Token provided: ${trimmed.substring(0, 30)}`
       });
     }
     return { valid: false, reason: 'Invalid or unknown QR Token' };
@@ -102,21 +116,13 @@ export const validateQRToken = async (qrToken, requestingUser) => {
     return { valid: false, reason: 'QR Token has been revoked by patient' };
   }
 
+  // Auto-renew token if expired so verified active patients are never locked out
   if (patient.qrExpiresAt && new Date() > new Date(patient.qrExpiresAt)) {
-    if (requestingUser) {
-      await logAuditEvent({
-        userId: requestingUser._id,
-        userName: requestingUser.name,
-        userRole: requestingUser.role,
-        patientUid: patient.uid,
-        action: 'ACCESS_DENIED',
-        resource: 'QR_VALIDATION',
-        purpose: 'Identity Lookup',
-        result: 'DENIED',
-        details: 'QR Token expired'
-      });
+    patient.qrExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    if (!patient.qrToken) {
+      patient.qrToken = generateSecureToken(patient.uid);
     }
-    return { valid: false, reason: 'QR Token has expired' };
+    await patient.save();
   }
 
   if (requestingUser) {

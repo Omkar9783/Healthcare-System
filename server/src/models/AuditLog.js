@@ -22,14 +22,17 @@ const auditLogSchema = new mongoose.Schema({
       'LOGIN_SUCCESS',
       'LOGIN_FAILED',
       'PRESCRIPTION_DISPENSED',
-      'LAB_REPORT_UPDATED'
+      'LAB_REPORT_UPDATED',
+      'DOCUMENT_VERIFIED',
+      'DOCUMENT_MANUAL_APPROVED',
+      'DOCUMENT_MANUAL_REJECTED'
     ],
     required: true 
   },
   resource: { type: String, required: true },
   purpose: { type: String, default: 'Clinical Care' },
   ipAddress: { type: String, default: '127.0.0.1' },
-  result: { type: String, enum: ['SUCCESS', 'DENIED', 'EXPIRED'], default: 'SUCCESS' },
+  result: { type: String, enum: ['SUCCESS', 'DENIED', 'EXPIRED', 'PENDING_REVIEW'], default: 'SUCCESS' },
   details: { type: String, default: '' },
   timestamp: { type: Date, default: Date.now, index: true }
 });

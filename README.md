@@ -46,7 +46,50 @@ An intelligent, full-stack healthcare identity, access control, and government h
 - **Hospital Verification Workflow**:
   - Hospital staff / Admin review desk to approve, request additional documents, or reject pre-admission scheme requests.
 
-### 3. 🩺 Clinical & Hospital Management
+### 3. 📑 AI Government Scheme Recommendation & Auto-Form Filling Assistant
+- **Aadhaar Demographic Extraction**:
+  - YOLO11 document classification and multilingual PaddleOCR extraction in English, Hindi, and Marathi.
+  - Verification of signed UIDAI QR codes and offline e-KYC XML data.
+  - Mandatory zero-exposure Aadhaar number masking (`XXXX-XXXX-1234`).
+  - Strict user informed consent gate before processing identity documents.
+- **Supporting Document Extraction**:
+  - Automated field extraction for **Income Certificates** (Tahsildar), **Caste Certificates** (SDO), **Disability Certificates / UDID** (Medical Board), **Birth / Age Certificates**, **Bank Account Passbooks** (with masked account numbers), and **Maharashtra Ration Cards**.
+- **Structured Government Scheme Database**:
+  - Officially published criteria, required documents, application form fields, official application URLs, and gazette citations for:
+    - **Ayushman Bharat PM-JAY** (NHA / MoHFW)
+    - **Mahatma Jyotirao Phule Jan Arogya Yojana (MJPJAY 2.0)** (SHAS / GoM)
+    - **Sanjay Gandhi Niradhar Anudan Yojana (SGNAY)** (Social Justice Dept, GoM)
+    - **Shravan Bal Seva Nivruttivetan Yojana (SBSNY)** (Social Justice Dept, GoM)
+    - **Janani Suraksha Yojana (JSY) / Matrushakti** (NHM / Public Health Dept, GoM)
+    - **Divyang Swavalamban & Disability Pension** (Divyangjan Welfare Dept, GoM)
+- **Rule-Based Scheme Eligibility Engine**:
+  - Automated synthesis comparing extracted patient profiles against published criteria.
+  - Classifies schemes into **Potentially Eligible**, **Insufficient Information**, or **Ineligible based on confirmed rules**.
+  - Provides detailed human-readable reasoning and lists exact missing documents and fields.
+  - Mandatory guardrail: Clearly distinguishes AI preliminary assessment from authorized official verification.
+- **Application Form Autofill Assistant**:
+  - Dynamically renders official scheme form fields and auto-populates them using extracted OCR data.
+  - Allows full user editing of every field and highlights missing mandatory information.
+  - Enables attaching verified uploaded supporting documents.
+  - Provides application preview and requires explicit user approval before saving.
+  - Direct links to official government application portals (`aaplesarkar.mahaonline.gov.in`, `beneficiary.nha.gov.in`, `jeevandayee.gov.in`).
+- **Database & Security**:
+  - 6 dedicated Mongoose collections: `GovernmentSchemes`, `SchemeEligibilityRules`, `PatientSchemeProfiles`, `SchemeRecommendations`, `SchemeApplications`, `ApplicationDocuments`.
+  - Immutable audit trails, RBAC enforcement, and zero plaintext PII persistence.
+
+### 3. 🤖 AI-Powered Document Detection & Verification Module
+- **YOLO11 Nano Computer Vision**: Fine-tuned document classification and localized field region detection for **Aadhaar Cards** and **Maharashtra Ration Cards**.
+- **Multilingual PaddleOCR & Fallback Engine**: High-accuracy structured extraction of demographic fields across English, Hindi, and Marathi.
+- **UIDAI Secure QR & Cryptographic PKI**: Decompresses V2/V3 big-integer QR payloads with zlib; validates official RSA-2048 digital signatures and Paperless Offline e-KYC XML certificates.
+- **Maharashtra RCMS Compliance**: Checks 12-digit SRC numbers, priority categories (Yellow, Orange, White, AAY), and family rosters against state guidelines.
+- **Anti-Tampering & Security**: Laplacian blur variance checks, layout aspect-ratio compliance, perceptual dHash duplicate detection, and zero-storage masking (`XXXX-XXXX-1234`).
+- **Independent Verification Status Matrix**: Independent flags for Detection, OCR, QR, Signature, Official Verification, Demographic Matching, and Security Anomalies.
+- **Multi-Role Interfaces**:
+  - *Patient*: Document upload (front/back), live inspection pipeline, demographic cross-match report.
+  - *Doctor*: Clinical identity verification lookup (masks raw document images for privacy).
+  - *Admin*: Central verification queue, statistics cards, and 1-click manual approve/reject audit decisions.
+
+### 4. 🩺 Clinical & Hospital Management
 - **Digital Patient Health Pass**: Instant unique health ID (`PAT-2026-XXXXXX`) and dynamic QR token.
 - **Prescription Writer & Pharmacy Fulfillment**: E-prescriptions with dispensing workflow.
 - **Diagnostics & Pathology**: Lab report management with critical parameter flagging.
@@ -58,8 +101,9 @@ An intelligent, full-stack healthcare identity, access control, and government h
 ## 🛠️ Tech Stack
 
 - **Frontend**: React 19, Vite 8, Tailwind CSS, Lucide Icons, Canvas Confetti, QRCode.react
-- **Backend**: Node.js, Express.js (ES Modules), JWT, BcryptJS
-- **Database**: MongoDB with Mongoose (compatible with MongoDB Atlas and in-memory MongoDB fallback)
+- **Backend API**: Node.js, Express.js (ES Modules), Mongoose, Multer, JWT, BcryptJS
+- **AI Microservice**: Python 3.10, FastAPI, Uvicorn, Ultralytics YOLO11 Nano, PyTorch (with Apple Silicon MPS & CPU fallback), OpenCV, PaddleOCR, Cryptography, PyCryptodome, DefusedXML
+- **Database**: MongoDB with Mongoose (with in-memory MongoDB fallback)
 - **Internationalization (i18n)**: English, Hindi (हिंदी), Marathi (मराठी)
 
 ---
@@ -107,6 +151,22 @@ The application will be accessible at:
 - **Frontend Web App**: `http://localhost:5173/`
 - **Backend API**: `http://localhost:5001/api`
 - **Health Check**: `http://localhost:5001/api/health`
+
+---
+
+## 🧪 Running Automated Tests
+
+Run the complete test suites for both the AI computer vision service and the backend rule eligibility engine:
+
+```bash
+# 1. Run Node.js Rule-Based Scheme Eligibility Engine Tests
+cd server
+npm test
+
+# 2. Run Python YOLO & Multilingual OCR Tests in AI Document Service
+cd ../ai-document-service
+PYTHONPATH=. venv/bin/pytest tests
+```
 
 ---
 

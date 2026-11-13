@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import jsQR from 'jsqr';
 import { useLanguage } from '../context/LanguageContext';
 import { apiFetch } from '../services/api';
 import { QrCode, X, CheckCircle2, AlertOctagon, RefreshCw, Camera, CameraOff, ShieldCheck, Upload } from 'lucide-react';
@@ -16,6 +17,7 @@ export const QRScannerModal = ({ isOpen, onClose, onPatientSelect }) => {
   const videoRef = useRef(null);
   const mediaStreamRef = useRef(null);
   const scanIntervalRef = useRef(null);
+  const scanCanvasRef = useRef(null);
 
   // Start media stream camera
   const startCamera = async () => {
@@ -64,31 +66,67 @@ export const QRScannerModal = ({ isOpen, onClose, onPatientSelect }) => {
     setCameraActive(false);
   };
 
-  // Attempt real-time BarcodeDetector frame analysis
+  // Real-time frame analysis using jsQR and fallback BarcodeDetector
   const startQRCodeDetector = () => {
+    let nativeDetector = null;
     if ('BarcodeDetector' in window) {
       try {
-        const barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code'] });
-        scanIntervalRef.current = setInterval(async () => {
-          if (videoRef.current && videoRef.current.readyState === 4 && !scanning && !validationResult) {
-            try {
-              const barcodes = await barcodeDetector.detect(videoRef.current);
-              if (barcodes && barcodes.length > 0) {
-                const detectedToken = barcodes[0].rawValue;
-                if (detectedToken) {
-                  stopCamera();
-                  handleValidateToken(detectedToken);
-                }
-              }
-            } catch (_err) {
-              // Ignore single frame detect error
-            }
-          }
-        }, 500);
+        nativeDetector = new window.BarcodeDetector({ formats: ['qr_code'] });
       } catch (err) {
-        console.warn('BarcodeDetector initialization warning:', err);
+        nativeDetector = null;
       }
     }
+
+    scanIntervalRef.current = setInterval(async () => {
+      const video = videoRef.current;
+      if (!video || video.readyState < 2 || scanning || validationResult) {
+        return;
+      }
+
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+      if (!width || !height) return;
+
+      // 1. Try native BarcodeDetector if available
+      if (nativeDetector) {
+        try {
+          const barcodes = await nativeDetector.detect(video);
+          if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+            stopCamera();
+            handleValidateToken(barcodes[0].rawValue);
+            return;
+          }
+        } catch (_err) {
+          // Fall through to jsQR
+        }
+      }
+
+      // 2. Client-side canvas decode with jsQR (Universal compatibility across all browsers)
+      try {
+        if (!scanCanvasRef.current) {
+          scanCanvasRef.current = document.createElement('canvas');
+        }
+        const canvas = scanCanvasRef.current;
+        if (canvas.width !== width) canvas.width = width;
+        if (canvas.height !== height) canvas.height = height;
+
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, width, height);
+          const imageData = ctx.getImageData(0, 0, width, height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: 'dontInvert'
+          });
+
+          if (code && code.data && code.data.trim().length > 0) {
+            stopCamera();
+            handleValidateToken(code.data.trim());
+          }
+        }
+      } catch (err) {
+        console.warn('Frame scan pass warning:', err);
+      }
+    }, 250);
   };
 
   useEffect(() => {
@@ -141,19 +179,40 @@ export const QRScannerModal = ({ isOpen, onClose, onPatientSelect }) => {
     reader.onload = async (e) => {
       const img = new Image();
       img.onload = async () => {
+        // 1. Try native BarcodeDetector
         if ('BarcodeDetector' in window) {
           try {
             const barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code'] });
             const barcodes = await barcodeDetector.detect(img);
-            if (barcodes.length > 0) {
+            if (barcodes.length > 0 && barcodes[0].rawValue) {
               handleValidateToken(barcodes[0].rawValue);
               return;
             }
           } catch (err) {
-            console.warn('Barcode detection failed on uploaded image', err);
+            console.warn('Barcode detection failed on uploaded image, falling back to jsQR', err);
           }
         }
-        // Fallback token extraction from filename or default mock
+
+        // 2. Decode using canvas and jsQR
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (code && code.data && code.data.trim().length > 0) {
+              handleValidateToken(code.data.trim());
+              return;
+            }
+          }
+        } catch (canvasErr) {
+          console.warn('Canvas jsQR image decode failed:', canvasErr);
+        }
+
+        // 3. Fallback token extraction
         handleValidateToken(manualToken);
       };
       img.src = e.target.result;

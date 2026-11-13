@@ -8,6 +8,8 @@
     "dev:server": "npm --prefix server dev",
     "dev:client": "npm --prefix client dev",
     "build:client": "npm --prefix client build",
+    "start:ai": "cd ai-document-service && venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
+    "test:ai": "cd ai-document-service && PYTHONPATH=. venv/bin/pytest tests",
     "dev": "npm --prefix server start & npm --prefix client dev"
   }
 }

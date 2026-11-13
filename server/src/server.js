@@ -18,6 +18,8 @@ import auditRoutes from './routes/auditRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import schemeRoutes from './routes/schemeRoutes.js';
+import schemeAssistantRoutes from './routes/schemeAssistantRoutes.js';
+import documentRoutes from './routes/documentRoutes.js';
 
 import { seedDatabase } from './seed.js';
 
@@ -44,6 +46,8 @@ app.use('/api/audit-logs', auditRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/schemes', schemeRoutes);
+app.use('/api/schemes/assistant', schemeAssistantRoutes);
+app.use('/api/documents', documentRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {
