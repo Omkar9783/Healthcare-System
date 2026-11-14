@@ -7,7 +7,7 @@
 const API_BASE_URL   = import.meta.env.VITE_API_BASE_URL  || 'http://localhost:5001';
 const API_PREFIX     = import.meta.env.VITE_API_PREFIX     || '/api';
 const TOKEN_KEY      = import.meta.env.VITE_TOKEN_KEY      || 'medisecure_token';
-const TIMEOUT_MS     = Number(import.meta.env.VITE_REQUEST_TIMEOUT) || 15000;
+const TIMEOUT_MS     = Number(import.meta.env.VITE_REQUEST_TIMEOUT) || 30000;
 
 /**
  * The base path used for every API call.
