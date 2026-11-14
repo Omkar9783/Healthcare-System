@@ -16,7 +16,9 @@ import {
   Lock, 
   Plus,
   RefreshCw,
-  QrCode
+  QrCode,
+  Trash2,
+  X
 } from 'lucide-react';
 
 export const DoctorDashboardView = ({ onOpenQRScanner, selectedPatientUid: externalPatientUid, onSelectPatient }) => {
@@ -34,6 +36,16 @@ export const DoctorDashboardView = ({ onOpenQRScanner, selectedPatientUid: exter
   
   // AI Summary Modal
   const [showAiModal, setShowAiModal] = useState(false);
+
+  // Prescription Form State
+  const [showNewPrescriptionModal, setShowNewPrescriptionModal] = useState(false);
+  const [isSubmittingPrescription, setIsSubmittingPrescription] = useState(false);
+  const [prescriptionForm, setPrescriptionForm] = useState({
+    diagnosis: '',
+    medicines: [
+      { name: '', dosage: '500mg', frequency: '1-0-1 (After Meals)', duration: '5 Days', instructions: 'Take with warm water' }
+    ]
+  });
 
   useEffect(() => {
     fetchPatientsList();
@@ -98,6 +110,77 @@ export const DoctorDashboardView = ({ onOpenQRScanner, selectedPatientUid: exter
       }
     } catch (err) {
       alert('Failed to save record: ' + err.message);
+    }
+  };
+
+  const handleOpenPrescriptionModal = () => {
+    const latestDiagnosis = patientRecord?.medicalRecords?.[0]?.diagnosis || '';
+    setPrescriptionForm({
+      diagnosis: latestDiagnosis,
+      medicines: [
+        { name: '', dosage: '500mg', frequency: '1-0-1 (After Meals)', duration: '5 Days', instructions: 'Take with warm water' }
+      ]
+    });
+    setShowNewPrescriptionModal(true);
+  };
+
+  const handleAddMedicineRow = () => {
+    setPrescriptionForm(prev => ({
+      ...prev,
+      medicines: [
+        ...prev.medicines,
+        { name: '', dosage: '', frequency: '1-0-1 (After Meals)', duration: '5 Days', instructions: 'Take after meals' }
+      ]
+    }));
+  };
+
+  const handleRemoveMedicineRow = (index) => {
+    if (prescriptionForm.medicines.length <= 1) return;
+    setPrescriptionForm(prev => ({
+      ...prev,
+      medicines: prev.medicines.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleMedicineFieldChange = (index, field, value) => {
+    setPrescriptionForm(prev => {
+      const updated = [...prev.medicines];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, medicines: updated };
+    });
+  };
+
+  const handleCreatePrescription = async (e) => {
+    e.preventDefault();
+    if (!selectedPatientUid) return;
+
+    const validMedicines = prescriptionForm.medicines.filter(m => m.name.trim() !== '');
+    if (validMedicines.length === 0) {
+      alert('Please add at least one medication with a valid medicine name.');
+      return;
+    }
+
+    try {
+      setIsSubmittingPrescription(true);
+      const res = await apiFetch('/prescriptions', {
+        method: 'POST',
+        body: JSON.stringify({
+          patientUid: selectedPatientUid,
+          diagnosis: prescriptionForm.diagnosis || 'Clinical Prescription',
+          medicines: validMedicines
+        })
+      });
+
+      if (res.success) {
+        setShowNewPrescriptionModal(false);
+        fetchPatientRecord(selectedPatientUid);
+      } else {
+        alert(res.message || 'Failed to issue prescription.');
+      }
+    } catch (err) {
+      alert('Error issuing prescription: ' + err.message);
+    } finally {
+      setIsSubmittingPrescription(false);
     }
   };
 
@@ -237,6 +320,14 @@ export const DoctorDashboardView = ({ onOpenQRScanner, selectedPatientUid: exter
                   </button>
 
                   <button
+                    onClick={handleOpenPrescriptionModal}
+                    className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs shadow-xs flex items-center space-x-1.5 transition-all"
+                  >
+                    <Pill className="w-4 h-4" />
+                    <span>Issue Prescription</span>
+                  </button>
+
+                  <button
                     onClick={() => setShowNewRecordModal(true)}
                     className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold text-xs shadow-xs flex items-center space-x-1 transition-all"
                   >
@@ -366,24 +457,56 @@ export const DoctorDashboardView = ({ onOpenQRScanner, selectedPatientUid: exter
 
                 {activeRecordTab === 'prescriptions' && (
                   <div className="space-y-3">
-                    {patientRecord.prescriptions.map(p => (
-                      <div key={p._id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-slate-900">{p.diagnosis}</span>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${p.dispensingStatus === 'Dispensed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                            {p.dispensingStatus}
-                          </span>
-                        </div>
-                        <div className="space-y-1">
-                          {p.medicines.map((m, i) => (
-                            <div key={i} className="p-2 bg-white rounded border border-slate-200 flex justify-between font-mono text-[11px]">
-                              <span>{m.name} ({m.dosage})</span>
-                              <span className="text-slate-600">{m.frequency} — {m.duration}</span>
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                      <span className="text-xs font-bold text-slate-700">Prescription History ({patientRecord.prescriptions?.length || 0})</span>
+                      <button
+                        onClick={handleOpenPrescriptionModal}
+                        className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs shadow-2xs flex items-center space-x-1 transition-all"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>New Prescription</span>
+                      </button>
+                    </div>
+
+                    {patientRecord.prescriptions && patientRecord.prescriptions.length > 0 ? (
+                      patientRecord.prescriptions.map(p => (
+                        <div key={p._id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-bold text-slate-900">{p.diagnosis}</span>
+                              <span className="text-[10px] text-slate-500 ml-2">by {p.doctorName} • {new Date(p.createdAt).toLocaleDateString()}</span>
                             </div>
-                          ))}
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${p.dispensingStatus === 'Dispensed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                              {p.dispensingStatus}
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            {p.medicines.map((m, i) => (
+                              <div key={i} className="p-2 bg-white rounded border border-slate-200 flex justify-between items-center font-mono text-[11px]">
+                                <div>
+                                  <span className="font-bold text-slate-800">{m.name}</span>
+                                  {m.dosage && <span className="text-sky-700 ml-1.5 font-semibold">({m.dosage})</span>}
+                                  {m.instructions && <span className="text-slate-500 font-sans ml-2 text-[10px] italic">— {m.instructions}</span>}
+                                </div>
+                                <span className="text-slate-600 text-xs font-sans">{m.frequency} • {m.duration}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="py-12 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        <Pill className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                        <p className="text-xs text-slate-500 font-medium">No prescriptions issued yet for this patient.</p>
+                        <button
+                          onClick={handleOpenPrescriptionModal}
+                          className="mt-3 px-3.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl inline-flex items-center space-x-1"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Issue First Prescription</span>
+                        </button>
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
 
@@ -478,6 +601,173 @@ export const DoctorDashboardView = ({ onOpenQRScanner, selectedPatientUid: exter
               <div className="flex justify-end space-x-2 pt-2">
                 <button type="button" onClick={() => setShowNewRecordModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-semibold">Cancel</button>
                 <button type="submit" className="px-4 py-2 bg-sky-600 text-white rounded-xl text-xs font-bold shadow-xs">Save Clinical Record</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Issue Prescription Modal */}
+      {showNewPrescriptionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center">
+                  <Pill className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">Issue Medical Prescription</h3>
+                  <p className="text-xs text-slate-500">
+                    Patient: <span className="font-semibold text-slate-800">{patientRecord?.patient?.name || selectedPatientUid}</span> ({selectedPatientUid})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowNewPrescriptionModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePrescription} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Clinical Diagnosis / Primary Indication <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={prescriptionForm.diagnosis}
+                  onChange={(e) => setPrescriptionForm({ ...prescriptionForm, diagnosis: e.target.value })}
+                  placeholder="e.g. Acute Upper Respiratory Infection, Type 2 Diabetes"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Prescribed Medications ({prescriptionForm.medicines.length})
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddMedicineRow}
+                    className="text-xs font-semibold text-teal-600 hover:text-teal-700 flex items-center space-x-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Another Medicine</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
+                  {prescriptionForm.medicines.map((med, index) => (
+                    <div key={index} className="p-3 bg-slate-50 rounded-xl border border-slate-200 relative space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                          Medicine #{index + 1}
+                        </span>
+                        {prescriptionForm.medicines.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMedicineRow(index)}
+                            className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
+                            title="Remove medication"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">Medicine Name *</label>
+                          <input
+                            type="text"
+                            required
+                            value={med.name}
+                            onChange={(e) => handleMedicineFieldChange(index, 'name', e.target.value)}
+                            placeholder="e.g. Paracetamol, Amoxicillin"
+                            className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">Dosage / Strength</label>
+                          <input
+                            type="text"
+                            value={med.dosage}
+                            onChange={(e) => handleMedicineFieldChange(index, 'dosage', e.target.value)}
+                            placeholder="e.g. 500mg, 10ml, 1 Tab"
+                            className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">Frequency</label>
+                          <input
+                            type="text"
+                            value={med.frequency}
+                            onChange={(e) => handleMedicineFieldChange(index, 'frequency', e.target.value)}
+                            placeholder="e.g. 1-0-1 (After Meals)"
+                            className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">Duration</label>
+                          <input
+                            type="text"
+                            value={med.duration}
+                            onChange={(e) => handleMedicineFieldChange(index, 'duration', e.target.value)}
+                            placeholder="e.g. 5 Days, 1 Month"
+                            className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">Instructions</label>
+                          <input
+                            type="text"
+                            value={med.instructions}
+                            onChange={(e) => handleMedicineFieldChange(index, 'instructions', e.target.value)}
+                            placeholder="e.g. Take with water"
+                            className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowNewPrescriptionModal(false)}
+                  disabled={isSubmittingPrescription}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingPrescription}
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center space-x-1.5 transition-colors disabled:opacity-60"
+                >
+                  {isSubmittingPrescription ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Issuing Prescription...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Issue Prescription</span>
+                    </>
+                  )}
+                </button>
               </div>
             </form>
           </div>
