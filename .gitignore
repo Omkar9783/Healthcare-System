@@ -54,3 +54,4 @@ ai-document-service/.env
 *real_aadhaar*
 *aadhaar_real*
 *user_uploaded*
+ai-document-service/datasets/document/
