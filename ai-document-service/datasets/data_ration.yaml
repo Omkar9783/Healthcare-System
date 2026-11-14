@@ -1,5 +1,5 @@
 # YOLO11 Ration Card Field Detection Dataset Config
-path: ../datasets
+path: datasets
 train: ration/images/train
 val: ration/images/val
 test: ration/images/test

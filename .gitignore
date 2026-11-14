@@ -44,5 +44,13 @@ ai-document-service/venv/
 __pycache__/
 *.pyc
 *.pt
+*.cache
+runs/
 .pytest_cache/
 ai-document-service/.env
+
+# Personal & Real Identity Documents (Never commit to git)
+*real_*
+*real_aadhaar*
+*aadhaar_real*
+*user_uploaded*

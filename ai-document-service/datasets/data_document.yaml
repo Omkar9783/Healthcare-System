@@ -1,5 +1,5 @@
 # YOLO11 Document Classification and Detection Dataset Config
-path: ../datasets
+path: datasets
 train: document/images/train
 val: document/images/val
 test: document/images/test
